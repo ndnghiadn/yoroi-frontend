@@ -10,7 +10,6 @@ import { handleExternalLinkClick } from '../../../utils/routing';
 import CheckDialog from '../../../components/wallet/hwConnect/ledger/CheckDialog';
 import ConnectDialog from '../../../components/wallet/hwConnect/ledger/ConnectDialog';
 import SaveDialog from '../../../components/wallet/hwConnect/ledger/SaveDialog';
-import UpgradeTxDialogContainer from '../../transfer/UpgradeTxDialogContainer';
 
 import { ProgressStep } from '../../../types/HWConnectStoreTypes';
 import type { NetworkRow } from '../../../api/ada/lib/storage/database/primitives/tables';
@@ -38,7 +37,6 @@ export default class WalletLedgerConnectDialogContainer extends Component<Props>
   };
 
   render(): null | Node {
-    const { actions, stores } = this.props;
     const { profile } = this.props.stores;
     const ledgerConnectStore = this.props.stores.substores.ada.ledgerConnect;
     const hwConnectActions = this.props.actions.ada.ledgerConnect;
@@ -70,15 +68,6 @@ export default class WalletLedgerConnectDialogContainer extends Component<Props>
             submit={hwConnectActions.submitConnect.trigger}
             cancel={this.cancel}
             classicTheme={profile.isClassicTheme}
-          />);
-        break;
-      case ProgressStep.TRANSFER:
-        component = (
-          <UpgradeTxDialogContainer
-            actions={actions}
-            stores={stores}
-            onClose={hwConnectActions.finishTransfer.trigger}
-            onSubmit={hwConnectActions.finishTransfer.trigger}
           />);
         break;
       case ProgressStep.SAVE:

@@ -1,36 +1,36 @@
 // @flow
 import { observable, } from 'mobx';
 import BigNumber from 'bignumber.js';
-import Store from '../base/Store';
-import Request from '../lib/LocalizedRequest';
+import Store from '../stores/base/Store';
+import Request from '../stores/lib/LocalizedRequest';
 import type {
   TransferTx,
-} from '../../types/TransferTypes';
-import { yoroiTransferTxFromAddresses } from '../../api/ada/transactions/transfer/legacyYoroi';
-import { RustModule } from '../../api/ada/lib/cardanoCrypto/rustLoader';
-import { generateWalletRootKey, } from '../../api/ada/lib/cardanoCrypto/cryptoWallet';
+} from '../types/TransferTypes';
+import { yoroiTransferTxFromAddresses } from '../api/ada/transactions/transfer/legacyYoroi';
+import { RustModule } from '../api/ada/lib/cardanoCrypto/rustLoader';
+import { generateWalletRootKey, } from '../api/ada/lib/cardanoCrypto/cryptoWallet';
 import {
   HARD_DERIVATION_START,
   WalletTypePurpose,
   CoinTypes,
-} from '../../config/numbersConfig';
+} from '../config/numbersConfig';
 import type {
   RestoreWalletForTransferResponse,
   RestoreWalletForTransferFunc,
   TransferToCip1852Func,
-} from '../../api/ada/index';
+} from '../api/ada';
 import {
   Bip44DerivationLevels,
-} from '../../api/ada/lib/storage/database/walletTypes/bip44/api/utils';
-import { getCardanoHaskellBaseConfig } from '../../api/ada/lib/storage/database/prepackaged/networks';
+} from '../api/ada/lib/storage/database/walletTypes/bip44/api/utils';
+import { getCardanoHaskellBaseConfig } from '../api/ada/lib/storage/database/prepackaged/networks';
 import {
   genTimeToSlot,
-} from '../../api/ada/lib/storage/bridge/timeUtils';
+} from '../api/ada/lib/storage/bridge/timeUtils';
 import type {
   Address, Addressing
-} from '../../api/ada/lib/storage/models/PublicDeriver/interfaces';
-import type { ActionsMap } from '../../actions/index';
-import type { StoresMap } from '../index';
+} from '../api/ada/lib/storage/models/PublicDeriver/interfaces';
+import type { ActionsMap } from '../actions';
+import type { StoresMap } from '../stores';
 
 export default class AdaYoroiTransferStore extends Store<StoresMap, ActionsMap> {
 

@@ -10,5 +10,4 @@ export default class HWConnectActions {
   goBackToCheck: Action<void> = new Action();
   submitConnect: AsyncAction<void> = new AsyncAction();
   submitSave: AsyncAction<string> = new AsyncAction();
-  finishTransfer: Action<void> = new Action();
 }

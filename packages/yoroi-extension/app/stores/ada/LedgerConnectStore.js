@@ -2,7 +2,6 @@
 // Handles Connect to Ledger Hardware Wallet dialog
 
 import { action, observable } from 'mobx';
-import BigNumber from 'bignumber.js';
 import type { ExtendedPublicKeyResp } from '../../utils/hwConnectHandler';
 import { LedgerConnect } from '../../utils/hwConnectHandler';
 
@@ -27,9 +26,6 @@ import { CheckAddressesInUseApiError } from '../../api/common/errors';
 import { Logger, stringifyData, stringifyError } from '../../utils/logging';
 import { CoinTypes, HARD_DERIVATION_START, WalletTypePurpose, } from '../../config/numbersConfig';
 import { Bip44DerivationLevels, } from '../../api/ada/lib/storage/database/walletTypes/bip44/api/utils';
-import { RustModule } from '../../api/ada/lib/cardanoCrypto/rustLoader';
-import { genTimeToSlot, } from '../../api/ada/lib/storage/bridge/timeUtils';
-import { getCardanoHaskellBaseConfig } from '../../api/ada/lib/storage/database/prepackaged/networks';
 import type { ActionsMap } from '../../actions/index';
 import type { StoresMap } from '../index';
 import type { GetExtendedPublicKeyResponse, } from '@cardano-foundation/ledgerjs-hw-app-cardano';
@@ -74,7 +70,6 @@ export default class LedgerConnectStore
     ledgerConnectAction.goBackToCheck.listen(this._goBackToCheck);
     ledgerConnectAction.submitConnect.listen(this._submitConnect);
     ledgerConnectAction.submitSave.listen(this._submitSave);
-    ledgerConnectAction.finishTransfer.listen(this._finishTransfer);
   }
 
   /** setup() is called when stores are being created
@@ -104,14 +99,7 @@ export default class LedgerConnectStore
 
     this.error = undefined;
     this.hwDeviceInfo = undefined;
-    this.stores.substores.ada.yoroiTransfer.transferRequest.reset();
     this.stores.wallets.sendMoneyRequest.reset();
-  };
-
-  @action _openTransferDialog: void => void = () => {
-    this.error = undefined;
-    this.progressInfo.currentStep = ProgressStep.TRANSFER;
-    this.progressInfo.stepState = StepState.PROCESS;
   };
 
   // =================== CHECK =================== //
@@ -138,34 +126,6 @@ export default class LedgerConnectStore
     this.progressInfo.stepState = StepState.PROCESS;
     await this._checkAndStoreHWDeviceInfo();
   };
-
-  _getPublicKey: {|
-    path: Array<number>
-  |} => Promise<HWDeviceInfo> = async (request) => {
-    Logger.debug(stringifyData(request));
-    try {
-      const ledgerConnect = new LedgerConnect({
-        locale: this.stores.profile.currentLocale,
-      });
-      this.ledgerConnect = ledgerConnect;
-
-      const extendedPublicKeyResp = await ledgerConnect.getExtendedPublicKey({
-        params: {
-          path: request.path,
-        },
-        // don't pass serial
-        // since we use the request to fetch the public key to get the serial # in the first place
-        serial: undefined,
-      });
-
-      return this._normalizeHWResponse(extendedPublicKeyResp);
-    } finally {
-      if (this.ledgerConnect != null) {
-        this.ledgerConnect.dispose();
-      };
-      this.ledgerConnect = undefined;
-    }
-  }
 
   _getMultiplePublicKeys: {|
     paths: Array<Array<number>>
@@ -201,71 +161,12 @@ export default class LedgerConnectStore
     }
   }
 
-  _generateTransferTx: (string, string) => Promise<void> = async (
-    bip44Key,
-    cip1852Key,
-  ) => {
-    const bip44AccountPubKey = RustModule.WalletV4.Bip32PublicKey.from_bytes(
-      Buffer.from(bip44Key, 'hex')
-    );
-    const cip1852AccountPubKey = RustModule.WalletV4.Bip32PublicKey.from_bytes(
-      Buffer.from(cip1852Key, 'hex')
-    );
-    const stateFetcher = this.stores.substores.ada.stateFetchStore.fetcher;
-    if (this.stores.profile.selectedNetwork == null) {
-      throw new Error(`${nameof(LedgerConnectStore)}::${nameof(this._checkAndStoreHWDeviceInfo)} no network selected`);
-    }
-    const { selectedNetwork } = this.stores.profile;
-    const fullConfig = getCardanoHaskellBaseConfig(
-      selectedNetwork
-    );
-    const timeToSlot = await genTimeToSlot(fullConfig);
-
-    try {
-      await this.stores.substores.ada.yoroiTransfer.transferRequest.execute({
-        cip1852AccountPubKey,
-        bip44AccountPubKey,
-        accountIndex: this.derivationIndex,
-        checkAddressesInUse: stateFetcher.checkAddressesInUse,
-        getUTXOsForAddresses: stateFetcher.getUTXOsForAddresses,
-        absSlotNumber: new BigNumber(timeToSlot({
-          // use server time for TTL if connected to server
-          time: this.stores.serverConnectionStore.serverTime ?? new Date(),
-        }).slot),
-        network: selectedNetwork,
-        defaultToken: this.stores.tokenInfoStore.getDefaultTokenInfo(selectedNetwork.NetworkId),
-      }).promise;
-    } catch (_e) {
-      // usually this means no internet connection or not enough ADA to upgrade
-      // so we just ignore this case
-    }
-  }
-
   _checkAndStoreHWDeviceInfo: void => Promise<void> = async () => {
-    this.stores.substores.ada.yoroiTransfer.transferRequest.reset();
     const accountPath = this.getPath();
     try {
-      // if restoring a Shelley wallet, check if there is any Byron balance
-      if (accountPath[0] === WalletTypePurpose.CIP1852) {
-        const bip44Path = [...accountPath];
-        bip44Path[0] = WalletTypePurpose.BIP44;
-
-        const [ pubKeyResponse, bip44Response ] = await this._getMultiplePublicKeys(
-          {
-            paths: [accountPath, bip44Path],
-          }
-        );
-
-        this.hwDeviceInfo = pubKeyResponse;
-
-        await this._generateTransferTx(
-          bip44Response.publicMasterKey,
-          pubKeyResponse.publicMasterKey, // cip1852
-        );
-      } else {
-        const pubKeyResponse = await this._getPublicKey({ path: accountPath });
-        this.hwDeviceInfo = pubKeyResponse;
-      }
+      const [ pubKeyResponse ] =
+        await this._getMultiplePublicKeys({ paths: [accountPath] });
+      this.hwDeviceInfo = pubKeyResponse;
       this._goToSaveLoad();
       Logger.info('Ledger device OK');
     } catch (error) {
@@ -426,34 +327,14 @@ export default class LedgerConnectStore
   async _onSaveSuccess(publicDeriver: PublicDeriver<>): Promise<void> {
     // close the active dialog
     Logger.debug(`${nameof(LedgerConnectStore)}::${nameof(this._onSaveSuccess)} success`);
-    if (this.stores.substores.ada.yoroiTransfer.transferRequest.result == null) {
-      this.actions.dialogs.closeActiveDialog.trigger();
-    }
-
+    this.actions.dialogs.closeActiveDialog.trigger();
     await this.stores.wallets.addHwWallet(publicDeriver);
     this.actions.wallets.setActiveWallet.trigger({
       wallet: publicDeriver
     });
-    if (this.stores.substores.ada.yoroiTransfer.transferRequest.result == null) {
-      this.actions.router.goToRoute.trigger({ route: ROUTES.WALLETS.ROOT });
-
-      // show success notification
-      this.stores.wallets.showLedgerWalletIntegratedNotification();
-
-      this.teardown();
-      Logger.info('SUCCESS: Ledger Connected Wallet created and loaded');
-    } else {
-      this._openTransferDialog();
-    }
-  }
-
-  _finishTransfer: void => void = () => {
-    this.actions.dialogs.closeActiveDialog.trigger();
     this.actions.router.goToRoute.trigger({ route: ROUTES.WALLETS.ROOT });
-
     // show success notification
     this.stores.wallets.showLedgerWalletIntegratedNotification();
-
     this.teardown();
     Logger.info('SUCCESS: Ledger Connected Wallet created and loaded');
   }

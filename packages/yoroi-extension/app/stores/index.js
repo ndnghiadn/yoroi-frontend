@@ -12,7 +12,7 @@ import WalletSettingsStore from './toplevel/WalletSettingsStore';
 import TransactionsStore from './toplevel/TransactionsStore';
 import AddressesStore from './toplevel/AddressesStore';
 import WalletRestoreStore from './toplevel/WalletRestoreStore';
-import YoroiTransferStore from './toplevel/YoroiTransferStore';
+import YoroiTransferStore from '../legacy-paper-wallet/YoroiTransferStore';
 import TransactionBuilderStore from './toplevel/TransactionBuilderStore';
 import DelegationStore from './toplevel/DelegationStore';
 import setupAdaStores from './ada/index';

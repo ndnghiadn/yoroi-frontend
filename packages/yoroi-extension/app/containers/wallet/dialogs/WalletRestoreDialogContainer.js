@@ -46,6 +46,8 @@ type Props = {|
   +onBack: void => void,
 |};
 
+// <TODO:PENDING_REMOVAL> transfer
+
 @observer
 export default class WalletRestoreDialogContainer extends Component<Props> {
   static contextTypes: {| intl: $npm$ReactIntl$IntlFormat |} = {
@@ -213,6 +215,7 @@ export default class WalletRestoreDialogContainer extends Component<Props> {
           />
         );
       }
+      // <TODO:PENDING_REMOVAL> legacy
       case RestoreSteps.LEGACY_EXPLANATION: {
         return (
           <LegacyExplanation
@@ -225,6 +228,7 @@ export default class WalletRestoreDialogContainer extends Component<Props> {
           />
         );
       }
+      // <TODO:PENDING_REMOVAL> legacy
       case RestoreSteps.TRANSFER_TX_GEN: {
         return this._transferDialogContent();
       }

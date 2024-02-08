@@ -6,7 +6,7 @@ import { observable, action } from 'mobx';
 import AdaWalletsStore from './AdaWalletsStore';
 import AdaTransactionsStore from './AdaTransactionsStore';
 import AddressesStore from './AdaAddressesStore';
-import AdaYoroiTransferStore from './AdaYoroiTransferStore';
+import AdaYoroiTransferStore from '../../legacy-paper-wallet/AdaYoroiTransferStore';
 import TrezorConnectStore from './TrezorConnectStore';
 import TrezorSendStore from './send/TrezorSendStore';
 import LedgerConnectStore from './LedgerConnectStore';

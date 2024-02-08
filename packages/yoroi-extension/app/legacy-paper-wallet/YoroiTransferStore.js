@@ -2,20 +2,20 @@
 import { action, observable, runInAction } from 'mobx';
 import { defineMessages } from 'react-intl';
 import { isEqual } from 'lodash';
-import { Logger, stringifyError } from '../../utils/logging';
-import Store from '../base/Store';
-import LocalizableError, { localizedError } from '../../i18n/LocalizableError';
-import type { TransferStatusT, TransferTx, } from '../../types/TransferTypes';
-import { TransferStatus, } from '../../types/TransferTypes';
-import { PublicDeriver } from '../../api/ada/lib/storage/models/PublicDeriver/index';
-import { unscramblePaperAdaMnemonic, } from '../../api/ada/lib/cardanoCrypto/paperWallet';
-import config from '../../config';
-import { SendTransactionApiError } from '../../api/common/errors';
-import type { Address, Addressing } from '../../api/ada/lib/storage/models/PublicDeriver/interfaces';
-import type { NetworkRow } from '../../api/ada/lib/storage/database/primitives/tables';
-import { getReceiveAddress } from '../stateless/addressStores';
-import type { ActionsMap } from '../../actions/index';
-import type { StoresMap } from '../index';
+import { Logger, stringifyError } from '../utils/logging';
+import Store from '../stores/base/Store';
+import LocalizableError, { localizedError } from '../i18n/LocalizableError';
+import type { TransferStatusT, TransferTx, } from '../types/TransferTypes';
+import { TransferStatus, } from '../types/TransferTypes';
+import { PublicDeriver } from '../api/ada/lib/storage/models/PublicDeriver';
+import { unscramblePaperAdaMnemonic, } from '../api/ada/lib/cardanoCrypto/paperWallet';
+import config from '../config';
+import { SendTransactionApiError } from '../api/common/errors';
+import type { Address, Addressing } from '../api/ada/lib/storage/models/PublicDeriver/interfaces';
+import type { NetworkRow } from '../api/ada/lib/storage/database/primitives/tables';
+import { getReceiveAddress } from '../stores/stateless/addressStores';
+import type { ActionsMap } from '../actions';
+import type { StoresMap } from '../stores';
 
 export default class YoroiTransferStore extends Store<StoresMap, ActionsMap> {
 
@@ -114,18 +114,8 @@ export default class YoroiTransferStore extends Store<StoresMap, ActionsMap> {
     if (recoveryPhrase == null) {
       throw new Error(`${nameof(this._setupTransferFundsWithPaperMnemonic)} paper wallet failed`);
     }
-    this.setupTransferFundsWithMnemonic({
-      recoveryPhrase,
-    });
-  }
-
-  setupTransferFundsWithMnemonic: {|
-    recoveryPhrase: string,
-  |} => void = (
-    payload
-  ) => {
     runInAction(() => {
-      this.recoveryPhrase = payload.recoveryPhrase;
+      this.recoveryPhrase = recoveryPhrase;
     });
     this._updateStatus(TransferStatus.DISPLAY_CHECKSUM);
   }
@@ -135,14 +125,7 @@ export default class YoroiTransferStore extends Store<StoresMap, ActionsMap> {
     updateStatusCallback: void => void,
     getDestinationAddress: void => Promise<{| ...Address, ...InexactSubset<Addressing> |}>,
   |} => Promise<TransferTx> = async (request) => {
-    if (this.stores.profile.selectedNetwork == null) {
-      throw new Error(`${nameof(YoroiTransferStore)}::${nameof(this.generateTransferTx)} no network selected`);
-    }
-    if (!this.stores.substores.ada.yoroiTransfer) {
-      throw new Error(`${nameof(YoroiTransferStore)}::${nameof(this.checkAddresses)} currency doesn't support Yoroi transfer`);
-    }
-    const { yoroiTransfer } = this.stores.substores.ada;
-    return await yoroiTransfer.generateTransferTxForByron(
+    return await this.stores.substores.ada.yoroiTransfer.generateTransferTxForByron(
       request,
     );
   }
@@ -161,7 +144,6 @@ export default class YoroiTransferStore extends Store<StoresMap, ActionsMap> {
     runInAction(() => {
       this.transferTx = transferTx;
     });
-
     this._updateStatus(TransferStatus.READY_TO_TRANSFER);
   }
 
