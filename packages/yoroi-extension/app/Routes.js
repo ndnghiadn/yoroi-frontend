@@ -27,18 +27,16 @@ import Wallet from './containers/wallet/Wallet';
 import RestoreWalletPage, { RestoreWalletPagePromise } from './containers/wallet/restore/RestoreWalletPage';
 
 // New UI pages
-import GouvernanceStatusPage from './UI/pages/Gouvernance/GouvernanceStatusPage';
-import GouvernanceDelegationFormPage from './UI/pages/Gouvernance/GouvernanceDelegationFormPage';
-import PortfolioPage from './UI/pages/portfolio/PortfolioPage';
-import PortfolioDappsPage from './UI/pages/portfolio/PortfolioDappsPage';
-import PortfolioDetailPage from './UI/pages/portfolio/PortfolioDetailPage';
-import { GovernanceContextProvider } from './UI/features/governace/module/GovernanceContextProvider';
 import { createCurrrentWalletInfo } from './UI/features/governace/common/helpers';
 import { GovernanceContextProvider } from './UI/features/governace/module/GovernanceContextProvider';
+import { PortfolioContextProvider } from './UI/features/portfolio/module/PortfolioContextProvider';
 import GovernanceDelegationFormPage from './UI/pages/Governance/GovernanceDelegationFormPage';
 import GovernanceStatusPage from './UI/pages/Governance/GovernanceStatusPage';
 import GovernanceTransactionFailedPage from './UI/pages/Governance/GovernanceTransactionFailedPage';
 import GovernanceTransactionSubmittedPage from './UI/pages/Governance/GovernanceTransactionSubmittedPage';
+import PortfolioDappsPage from './UI/pages/portfolio/PortfolioDappsPage';
+import PortfolioDetailPage from './UI/pages/portfolio/PortfolioDetailPage';
+import PortfolioPage from './UI/pages/portfolio/PortfolioPage';
 
 // PAGES
 const LanguageSelectionPagePromise = () => import('./containers/profile/LanguageSelectionPage');
@@ -445,6 +443,21 @@ const NFTsSubPages = (stores, actions) => (
   </Switch>
 );
 
+const AssetsSubpages = (stores, actions) => (
+  <Switch>
+    <Route
+      exact
+      path={ROUTES.ASSETS.ROOT}
+      component={props => <TokensPageRevamp {...props} stores={stores} actions={actions} />}
+    />
+    <Route
+      exact
+      path={ROUTES.ASSETS.DETAILS}
+      component={props => <TokensDetailPageRevamp {...props} stores={stores} actions={actions} />}
+    />
+  </Switch>
+);
+
 const GovernanceSubpages = (stores, actions) => (
   <Switch>
     <Route
@@ -498,6 +511,14 @@ export function wrapSettings(settingsProps: StoresAndActionsProps, children: Nod
   );
 }
 
+export function wrapAssets(assetsProps: StoresAndActionsProps, children: Node): Node {
+  return (
+    <AssetsWrapper {...assetsProps}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </AssetsWrapper>
+  );
+}
+
 export function wrapNFTs(assetsProps: StoresAndActionsProps, children: Node): Node {
   return (
     <NFTsWrapper {...assetsProps}>
@@ -528,5 +549,9 @@ export function wrapGovernance(governanceProps: StoresAndActionsProps, children:
   );
 }
 export function wrapPortfolio(portfolioProps: StoresAndActionsProps, children: Node): Node {
-  return <Suspense fallback={null}>{children}</Suspense>;
+  return (
+    <PortfolioContextProvider settingFiatPairUnit={portfolioProps.stores.profile.unitOfAccount}>
+      <Suspense fallback={null}>{children}</Suspense>
+    </PortfolioContextProvider>
+  );
 }

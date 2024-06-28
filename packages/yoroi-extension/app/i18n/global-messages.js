@@ -690,6 +690,10 @@ const globalMessages: * = defineMessages({
     id: 'sidebar.wallets',
     defaultMessage: '!!!My wallets',
   },
+  sidebarAssets: {
+    id: 'sidebar.assets',
+    defaultMessage: '!!!Assets',
+  },
   sidebarSettings: {
     id: 'sidebar.settings',
     defaultMessage: '!!!Settings',
@@ -995,14 +999,6 @@ const globalMessages: * = defineMessages({
   provider: {
     id: 'buysell.dialog.provider',
     defaultMessage: '!!!Provider',
-  },
-  portfolioHeaderText: {
-    id: 'portfolio.main.header.text',
-    defaultMessage: '!!!Tokens',
-  },
-  portfolioDetailHeaderText: {
-    id: 'portfolio.detail.header.text',
-    defaultMessage: '!!!Token details',
   },
 });
 export default globalMessages;
